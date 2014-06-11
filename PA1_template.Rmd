@@ -2,19 +2,58 @@
 
 
 ## Loading and preprocessing the data
+```{r}
+library(plyr)
+unzip("activity.zip")
+data<-read.csv("activity.csv")
+data$date<-as.Date(data$date)
 
-
-
+```
 ## What is mean total number of steps taken per day?
+```{r}
+completedata<-data[complete.cases(data),]
+hist(completedata$steps,main="Distribution of steps taken per day",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
+lista2<-ddply(completedata,.(date),summarise,mean(steps),median(steps))
+names(lista2)<-c("date","mean","median")
+lista2
+```
 
 
 
 ## What is the average daily activity pattern?
 
+```{r}
+prueba<-ddply(data,.(interval),summarize,mean=mean(steps,na.rm=TRUE))
+plot(prueba$interval,prueba$mean,type="l")
+##Saca el intervalo con el mayor n??mero de pasos
+max<-prueba[which.max(prueba$mean),]
+```
 
 
 ## Imputing missing values
+```{r}
+nasteps<-sum(is.na(data$steps))
+filleddata<-data
+na<-is.na(filleddata$steps)
+matches<-match(filleddata$interval[na],prueba$interval)
+filleddata$steps[na]<-prueba[matches,2]
+hist(filleddata$steps,main="Distribution of steps taken per day",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
+lista3<-ddply(filleddata,.(date),summarise,mean(steps),median(steps))
+names(lista3)<-c("date","mean","median")
+lista3
 
+
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+data$weekday<-weekdays(data$date)
+days<-c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+fact<-c(rep("weekday",5),rep("weekend",2))
+weekdaystable<-cbind(days,fact)
+weekdaymatches<-match(data$weekday,weekdaystable[,1])
+data$fact<-weekdaystable[weekdaymatches,2]
+
+```
+
