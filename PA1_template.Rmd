@@ -1,5 +1,7 @@
 # Reproducible Research: Peer Assessment 1
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the ???quantified self??? movement ??? a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
 
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
 ## Loading and preprocessing the data
 
@@ -15,39 +17,27 @@ data$date<-as.Date(data$date)
 ```
 ## What is mean total number of steps taken per day?
 
-The chunk of code below make a histogram of the steps per day, showing the distribution that the steps have. The histogram show that 0 is a dominant value in the data set. This can be caused by all the values near to 0 or 0 that appear on the first intevals of time each day, that are produced because the people are sleeping (probably) at that intervals(0 to 5 am each day)
+The chunk below creates a histogram of the total number of steps taken per day, showing us that there were 25 days with a measure of steps on the range of 10,000 and 15,000. 
 
-```{r,results='asis'}
-#Create a new data frame without NA's
-completedata<-data[complete.cases(data),]
+```{r histogramstepsum,results='asis'}
+#Compute the total number of steps per day
+stepssum<-ddply(data,.(date),summarize,sum=sum(steps,na.rm=TRUE))
+meansum<-mean(stepssum$sum)
+mediansum<-median(stepssum$sum)
 #Make a histogram with the frequency of number of steps
-hist(completedata$steps,main="Distribution of steps taken per day",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
+hist(stepssum$sum,main="Distribution of steps taken per day",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
 
 ```
 
-Next is showed a table with the mean of steps taken per day and the median. The median is in line with the histogram, showing that 0 is a dominant value.
-
-```{r,results='asis'}
-#Calculate the mean and the median of steps taken per day,assign names to the data frame 
-meanmediantable<-ddply(completedata,.(date),summarise,mean(steps),median(steps))
-#Assign names the columns of the data frame
-names(meanmediantable)<-c("date","mean","median")
-#Transform date variable to a character class variable to show correctly on table
-meanmediantable$date<-as.character(meanmediantable$date)
-#Prints the table in html format
-library(xtable)
-xt<-xtable(meanmediantable)
-print(xt,type="html")
-```
-
+The total steps per day variable has a mean of `r meansum` and a median of `r mediansum`
 
 ## What is the average daily activity pattern?
 
 This section shows the pattern on time intervals, showing first a plot of the mean of steps by interval vs interval. This plot shows that in the first intervals the people don't move a lot, and the values are near to 0. The average number of steps have a huge boost beyond the 500 interval, having the highest peak at the interval 835. This effect on the plot can be explained because at 5:00 the people begins their daily activities, and at 8:35 the people are doing activities that requires more movement than in other intervals. After that point, the activity have a considerable decrease, having other peaks but not with lowest values than the 835 interval. This can be explained because the people in the data set are more stable in one place, like their work or school. Finally, the activity have a decreasing tendency after the 2000 interval. This can be explained because at that time, people are at home resting. 
 
-```{r}
+```{r intervalplot}
 prueba<-ddply(data,.(interval),summarize,mean=mean(steps,na.rm=TRUE))
-plot(prueba$interval,prueba$mean,type="l",xlab="Interval",ylab="Number of steps")
+plot(prueba$interval,prueba$mean,type="l",xlab="Interval",ylab="Number of steps",col="Blue")
 ##Computes the interval with the maximum number of steps
 max<-prueba[which.max(prueba$mean),]
 ```
@@ -71,21 +61,18 @@ matches<-match(filleddata$interval[na],prueba$interval)
 filleddata$steps[na]<-prueba[matches,2]
 ```
 
-The next chunk of code make a histogram of the steps taken per day with the filled data. As it can be seen, the general form of the histogram doesn't change  in comparison with the histogram made before, which doesn't consider the NA values. So, the NA values doesn't change at all the distribution of the number of steps taken per day, keeping the 0 as the dominant value, as the median of each time interval shows.
+Comparing the histogram made with the original data set, and this histogram made with filled data, it is noticed that the distribution of the total number of steps per day change, decreasing the frequencies of the first two intervals (0-5,000 and 5,000-10,000), and increasing the frequencies of the interval (5000-10,000 number of steps). So, we can conclude that filling the data with the means of time intervals drives us to a more normal like distribution, with more values nearby the mean. 
 
-```{r}
-#Make a histogram with filled data
-hist(filleddata$steps,main="Distribution of steps taken per day",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
+```{r histogramfilledstepsum}
+#Calculate total number of steps, their median and the mean
+filledsumsteps<-ddply(filleddata,.(date),summarize,sum=sum(steps))
+meanfilledsum<-mean(filledsumsteps$sum)
+medianfilledsum<-median(filledsumsteps$sum)
+#Make a new histogram
+hist(filledsumsteps$sum,main="Distribution of steps taken per day (filled data)",xlab="Number of steps taken per day", ylab="Frequency",col="Red")
 ```
 
-The next chunk of code creates a table with the mean and the median of the number of steps. The median computed is in line with the histogram, showing that 0 is a dominant value as can be seen on the histogram.
-
-```{r,results='asis'}
-fillmeanmedian<-ddply(filleddata,.(date),summarise,mean(steps),median(steps))
-names(fillmeanmedian)<-c("date","mean","median")
-fillmeanmediantable<-xtable(fillmeanmedian)
-print(fillmeanmediantable,type="html")
-```
+The mean of the filled data steps is `r meanfilledsum` and the median is `r medianfilledsum`
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
@@ -93,7 +80,7 @@ In this section is analyzed the differences between weekdays and weekends activi
 The main differences are that weekends days have highest peaks than the weekdays, but the highest value of steps is on a weekday somewhere between the 500 and 1000 interval. 
 With the information described above, we can conclude that in general, there is more activity registration on weekends than in weekdays, probably because the people measuring their steps tends to stay out of their homes on weekends, causing to walk more.
 
-```{r}
+```{r panelplot}
 library("lattice")
 #Create a new variable in the data set that is the weekday of the date
 data$weekday<-weekdays(data$date)
